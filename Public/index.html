@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super-man: Content Machine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              200: '#bae6fd',
+              300: '#7dd3fc',
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+            },
+            dark: {
+              100: '#1E1E2E',
+              200: '#181825',
+              300: '#11111B',
+              400: '#0D0D14'
+            }
+          },
+          animation: {
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'float': 'float 3s ease-in-out infinite',
+          },
+          boxShadow: {
+            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.25)',
+            'inner-bright': 'inset 0 1px 1px 0 rgba(255, 255, 255, 0.1)',
+            'modern': '0 4px 20px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(14, 165, 233, 0.05)',
+            'solid': '0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -4px rgba(0, 0, 0, 0.2)'
+          }
+        }
+      }
+    }
+  </script>
+ <link rel="stylesheet" href="styles.css">
+</head>
+
+
+<body class="bg-dark-300 text-gray-200 min-h-screen">
+  <!-- Loading Overlay -->
+  <div id="loading" class="fixed inset-0 z-50 flex items-center justify-center bg-dark-300 bg-opacity-80 backdrop-blur">
+    <div class="text-center">
+      <span class="loader mb-4"></span>
+      <p class="mt-4 text-primary-400 animate-pulse font-medium">Loading your content...</p>
+    </div>
+  </div>
+
+  <!-- Token Modal -->
+  <div id="tokenModal" class="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur">
+    <div class="glass p-8 rounded-xl shadow-glass border border-primary-600/20 w-full max-w-md mx-4 slide-up">
+      <div class="flex items-center mb-6">
+        <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center mr-4 shadow-lg">
+          <i class="fas fa-lock text-white"></i>
+        </div>
+        <h2 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-200">Connect to Airtable</h2>
+      </div>
+      
+      <p class="mb-6 text-gray-400 leading-relaxed">To access your content database, we need your Airtable token. This will be stored securely in your browser.</p>
+      
+      <div class="mb-6">
+        <label for="tokenInput" class="block text-sm font-medium text-gray-300 mb-2">Airtable Access Token</label>
+        <div class="relative">
+          <input type="password" id="tokenInput" class="w-full px-4 py-3 bg-dark-200/80 border border-gray-700 shadow-inner-bright rounded-lg focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50 text-white" >
+          <button id="togglePassword" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+            <i class="fas fa-eye-slash text-gray-400"></i>
+          </button>
+        </div>
+      </div>
+      
+      <button id="saveTokenBtn" class="w-full bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white py-3 px-4 rounded-lg transition duration-300 flex items-center justify-center shadow-lg btn-highlight">
+        <i class="fas fa-plug mr-2"></i>
+        Connect and Load Content
+      </button>
+    </div>
+  </div>
+
+  <!-- Main App Layout -->
+  <div id="app" class="hidden h-screen flex overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-64 border-r border-gray-800/80 bg-gradient-to-b from-dark-200 to-dark-300 h-full flex flex-col shadow-lg">
+      <div class="p-4 border-b border-gray-800/80">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded flex items-center justify-center shadow-lg">
+            <i class="fas fa-bolt text-white"></i>
+          </div>
+          <h1 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-200">Super-man</h1>
+        </div>
+        <p class="text-xs text-gray-500 mt-1">Content Machine</p>
+      </div>
+      
+      <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+        <a href="#" id="nav-dashboard" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg bg-primary-600/20 text-primary-400 hover:bg-primary-600/10 transition-colors group shadow-inner-bright">
+          <i class="fas fa-chart-pie w-5 h-5 mr-3 text-primary-500 group-hover:text-primary-400"></i>
+          Dashboard
+        </a>
+        <a href="#" id="nav-content" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-400 hover:bg-primary-600/10 hover:text-primary-400 transition-colors group">
+          <i class="fas fa-layer-group w-5 h-5 mr-3 text-gray-500 group-hover:text-primary-400"></i>
+          Content
+        </a>
+        <a href="#" id="nav-actions" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-400 hover:bg-primary-600/10 hover:text-primary-400 transition-colors group">
+          <i class="fas fa-bolt w-5 h-5 mr-3 text-gray-500 group-hover:text-primary-400"></i>
+          Actions
+        </a>
+        <a href="#" id="nav-calendar" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-400 hover:bg-primary-600/10 hover:text-primary-400 transition-colors group">
+          <i class="fas fa-calendar w-5 h-5 mr-3 text-gray-500 group-hover:text-primary-400"></i>
+          Calendar
+        </a>
+        
+        <div class="pt-6 mt-6 border-t border-gray-800/50">
+          <p class="px-3 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Quick Actions</p>
+          <button id="create-content-btn" class="flex items-center w-full px-3 py-2.5 text-sm font-medium rounded-lg text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 transition-colors shadow-lg btn-highlight">
+            <i class="fas fa-plus w-5 h-5 mr-3"></i>
+            Create New Content
+          </button>
+        </div>
+      </nav>
+      
+      <div class="p-4 border-t border-gray-800/50">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center shadow-md">
+            <i class="fas fa-user text-gray-300"></i>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-white">Content Manager</p>
+            <p class="text-xs text-gray-500">Connected to Airtable</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto bg-gradient-animate">
+      <!-- Dashboard View -->
+      <div id="dashboard-view" class="p-6 h-full">
+        <div class="mb-6 flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-200">Dashboard</h1>
+            <p class="text-gray-400">Overview of your content management system</p>
+          </div>
+          <div class="text-sm text-gray-400 bg-dark-200/70 px-3 py-1.5 rounded-lg shadow-inner-bright" id="current-date">April 12, 2025</div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+          <div class="bg-gradient-to-br from-dark-100 to-dark-200 rounded-xl p-5 shadow-modern card-hover border border-gray-800/50">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-gray-400 text-sm">New Ideas</p>
+                <h3 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300 mt-1" id="ideas-count">--</h3>
+                <p class="text-primary-500 text-xs mt-2">
+                  <i class="fas fa-lightbulb mr-1"></i> 
+                  Waiting for development
+                </p>
+              </div>
+              <div class="bg-primary-600/20 p-3 rounded-lg shadow-lg border border-primary-600/10">
+                <i class="fas fa-lightbulb text-primary-400"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-dark-100 to-dark-200 rounded-xl p-5 shadow-modern card-hover border border-gray-800/50">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-gray-400 text-sm">In Progress</p>
+                <h3 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300 mt-1" id="in-progress-count">--</h3>
+                <p class="text-amber-500 text-xs mt-2">
+                  <i class="fas fa-spinner fa-spin mr-1"></i>
+                  Currently in work
+                </p>
+              </div>
+              <div class="bg-amber-600/20 p-3 rounded-lg shadow-lg border border-amber-600/10">
+                <i class="fas fa-clock text-amber-400"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-dark-100 to-dark-200 rounded-xl p-5 shadow-modern card-hover border border-gray-800/50">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-gray-400 text-sm">Needs Review</p>
+                <h3 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300 mt-1" id="review-count">--</h3>
+                <p class="text-orange-500 text-xs mt-2">
+                  <i class="fas fa-search mr-1"></i>
+                  Waiting for approval
+                </p>
+              </div>
+              <div class="bg-orange-600/20 p-3 rounded-lg shadow-lg border border-orange-600/10">
+                <i class="fas fa-search text-orange-400"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-dark-100 to-dark-200 rounded-xl p-5 shadow-modern card-hover border border-gray-800/50">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-gray-400 text-sm">Published</p>
+                <h3 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300 mt-1" id="published-count">--</h3>
+                <p class="text-green-500 text-xs mt-2">
+                  <i class="fas fa-check-circle mr-1"></i>
+                  Live content
+                </p>
+              </div>
+              <div class="bg-green-600/20 p-3 rounded-lg shadow-lg border border-green-600/10">
+                <i class="fas fa-check-circle text-green-400"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity and Recent Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Recent Content -->
+          <div class="lg:col-span-2 bg-gradient-to-br from-dark-100 to-dark-200 rounded-xl overflow-hidden shadow-modern border border-gray-800/50">
+            <div class="px-5 py-4 flex justify-between items-center border-b border-gray-800/80">
+              <h3 class="font-medium text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">Recent Content</h3>
+              <a href="#" id="view-all-content" class="text-sm text-primary-400 hover:text-primary-300 transition-colors relative group">
+                View all
+                <i class="fas fa-chevron-right ml-1 text-xs"></i>
+                <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-400 group-hover:w-full transition-all duration-300"></span>
+              </a>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-800/50">
+                <thead class="bg-dark-200/80">
+                  <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Content</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="recent-content-table" class="divide-y divide-gray-800/50">
+                  <tr>
+                    <td colspan="4" class="px-6 py-4 text-center text-gray-500">
+                      <i class="fas fa-spinner fa-spin mr-2"></i> Loading recent content...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Upcoming Schedule -->
+          <div class="bg-gradient-to-br from-dark-100 to-dark-200 rounded-xl overflow-hidden shadow-modern border border-gray-800/50">
+            <div class="px-5 py-4 flex justify-between items-center border-b border-gray-800/80">
+              <h3 class="font-medium text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">Upcoming Schedule</h3>
+              <a href="#" id="view-calendar" class="text-sm text-primary-400 hover:text-primary-300 transition-colors relative group">
+                Calendar
+                <i class="fas fa-chevron-right ml-1 text-xs"></i>
+                <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-400 group-hover:w-full transition-all duration-300"></span>
+              </a>
+            </div>
+            <div class="p-5" id="upcoming-schedule">
+              <div class="flex justify-center items-center h-40 text-gray-500">
+                <i class="fas fa-spinner fa-spin mr-2"></i> Loading schedule...
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content View -->
+      <div id="content-view" class="p-6 h-full hidden">
+        <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-200">Content Library</h1>
+            <p class="text-gray-400">Manage all your content in one place</p>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <div class="relative">
+              <input id="content-search" type="text" placeholder="Search content..." class="bg-dark-200/80 border border-gray-700/80 shadow-inner-bright rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-transparent text-white w-full">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-search text-gray-500"></i>
+              </div>
+            </div>
+            <div>
+              <select id="content-filter" class="bg-dark-200/80 border border-gray-700/80 shadow-inner-bright rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-transparent text-white appearance-none">
+                <option value="all">All Content</option>
+                <option value="in-progress">In Progress</option>
+                <option value="needs-review">Needs Review</option>
+                <option value="approved">Approved</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="published">Published</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div id="content-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div class="col-span-full flex justify-center items-center py-20">
+            <i class="fas fa-spinner fa-spin mr-2 text-primary-400"></i>
+            <span class="text-gray-400">Loading content...</span>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="mt-8 flex flex-col sm:flex-row justify-between items-center">
+          <div class="text-sm text-gray-400 mb-4 sm:mb-0 bg-dark-200/60 px-3 py-1.5 rounded-lg shadow-inner-bright">
+            Showing <span id="pagination-start">1</span> to <span id="pagination-end">10</span> of <span id="pagination-total">--</span> results
+          </div>
+          <div class="flex space-x-2">
+            <button id="prev-page" class="px-4 py-2 bg-dark-200/80 border border-gray-700/50 rounded-lg text-gray-300 hover:bg-dark-100 disabled:opacity-50 disabled:cursor-not-allowed shadow-md btn-highlight">
+              <i class="fas fa-chevron-left mr-1"></i> Previous
+            </button>
+            <button id="next-page" class="px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed shadow-md btn-highlight">
+              Next <i class="fas fa-chevron-right ml-1"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions View -->
+      <div id="actions-view" class="p-6 h-full hidden">
+        <div class="mb-6">
+          <h1 class="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-200">Actions Hub</h1>
+          <p class="text-gray-400">Apply powerful automations to your content</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Available Actions -->
+          <div class="lg:col-span-2 bg-gradient-to-br from-dark-100 to-dark-200 rounded-xl overflow-hidden shadow-modern border border-gray-800/50">
+            <div class="px-5 py-4 border-b border-gray-800/80">
+              <h3 class="font-medium text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">Available Actions</h3>
+            </div>
+            <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4" id="actions-list">
+              <div class="col-span-full flex justify-center items-center py-10">
+                <i class="fas fa-spinner fa-spin mr-2 text-primary-400"></i>
+                <span class="text-gray-400">Loading actions...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Apply Action Panel -->
+          <div class="bg-gradient-to-br from-dark-100 to-dark-200 rounded-xl overflow-hidden shadow-modern border border-gray-800/50">
+            <div class="px-5 py-4 border-b border-gray-800/80">
+              <h3 class="font-medium text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">Apply Action</h3>
+            </div>
+            <div class="p-5">
+              <form id="apply-action-form">
+                <div class="mb-4">
+                  <label for="select-action" class="block text-sm font-medium text-gray-300 mb-2">Select Action</label>
+                  <select id="select-action" class="w-full bg-dark-200/80 border border-gray-700/80 shadow-inner-bright rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-transparent text-white">
+                    <option value="">Choose an action...</option>
+                  </select>
+                </div>
+                <div class="mb-4">
+                  <label for="select-content" class="block text-sm font-medium text-gray-300 mb-2">Select Content</label>
+                  <select id="select-content" class="w-full bg-dark-200/80 border border-gray-700/80 shadow-inner-bright rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-transparent text-white">
+                    <option value="">Choose content...</option>
+                  </select>
+                </div>
+                <button type="submit" id="content-apply-action-btn" class="w-full mt-4 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white py-2 px-4 rounded-lg transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-md btn-highlight">
+                  <i class="fas fa-bolt mr-2"></i>
+                  Apply Action
+                </button>
+              </form>
+
+              <div class="mt-6 pt-6 border-t border-gray-800/50">
+                <h4 class="text-sm font-medium text-gray-300 mb-3">Recent Activity</h4>
+                <div id="action-activity" class="space-y-3 text-xs">
+                  <div class="flex items-start">
+                    <div class="h-6 w-6 rounded-full bg-green-600/20 flex items-center justify-center mr-2 shadow-md">
+                      <i class="fas fa-check text-green-400 text-xs"></i>
+                    </div>
+                    <div>
+                      <p class="text-gray-300">Text To AI Video applied</p>
+                      <p class="text-gray-500">Today at 09:15 AM</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <div class="h-6 w-6 rounded-full bg-primary-600/20 flex items-center justify-center mr-2 shadow-md">
+                      <i class="fas fa-bolt text-primary-400 text-xs"></i>
+                    </div>
+                    <div>
+                      <p class="text-gray-300">Clone Content executed</p>
+                      <p class="text-gray-500">Yesterday at 4:32 PM</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calendar View -->
+      <div id="calendar-view" class="p-6 h-full hidden">
+        <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-200">Content Calendar</h1>
+            <p class="text-gray-400">Schedule and plan your content</p>
+          </div>
+          <div class="flex items-center space-x-4">
+            <button id="prev-month" class="p-2 rounded-lg bg-dark-200/80 hover:bg-dark-100 text-gray-300 shadow-md">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <span id="current-month" class="text-lg font-medium text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">April 2025</span>
+            <button id="next-month" class="p-2 rounded-lg bg-dark-200/80 hover:bg-dark-100 text-gray-300 shadow-md">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+            <button id="today-btn" class="ml-2 px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 rounded-lg text-white shadow-md btn-highlight">
+              Today
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-dark-100 to-dark-200 rounded-xl overflow-hidden shadow-modern border border-gray-800/50">
+          <div class="grid grid-cols-7 gap-px bg-gray-800/50">
+            <div class="bg-dark-200/80 py-2 text-center text-xs font-medium text-gray-400">SUN</div>
+            <div class="bg-dark-200/80 py-2 text-center text-xs font-medium text-gray-400">MON</div>
+            <div class="bg-dark-200/80 py-2 text-center text-xs font-medium text-gray-400">TUE</div>
+            <div class="bg-dark-200/80 py-2 text-center text-xs font-medium text-gray-400">WED</div>
+            <div class="bg-dark-200/80 py-2 text-center text-xs font-medium text-gray-400">THU</div>
+            <div class="bg-dark-200/80 py-2 text-center text-xs font-medium text-gray-400">FRI</div>
+            <div class="bg-dark-200/80 py-2 text-center text-xs font-medium text-gray-400">SAT</div>
+          </div>
+          <div id="calendar-grid" class="grid grid-cols-7 gap-px bg-gray-800/50">
+            <!-- Calendar cells will be inserted here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Single Content View -->
+      <div id="single-content-view" class="p-6 h-full hidden">
+        <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+          <div class="flex items-center">
+            <button id="back-to-content" class="p-2 rounded-lg bg-dark-200/80 hover:bg-dark-100 text-gray-300 mr-3 shadow-md">
+              <i class="fas fa-arrow-left"></i>
+            </button>
+            <div>
+              <div class="flex items-center">
+                <h1 class="text-2xl font-bold tracking-tight text-white" id="content-title">Content Title</h1>
+                <span id="content-status-badge" class="ml-3 status-pill bg-gradient-to-r from-yellow-600/20 to-yellow-500/20 text-yellow-400">In Progress</span>
+              </div>
+              <p class="text-gray-400" id="content-id">C123</p>
+            </div>
+          </div>
+          <div class="mt-4 sm:mt-0 flex space-x-3">
+            <a id="text-doc-link" href="#" target="_blank" class="px-3 py-1.5 bg-dark-200/80 rounded-lg text-gray-300 hover:bg-dark-100 flex items-center shadow-md transition-all">
+              <i class="fas fa-file-alt mr-2"></i> Document
+            </a>
+            <a id="folder-link" href="#" target="_blank" class="px-3 py-1.5 bg-dark-200/80 rounded-lg text-gray-300 hover:bg-dark-100 flex items-center shadow-md transition-all">
+              <i class="fas fa-folder mr-2"></i> Folder
+            </a>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <!-- Main Content Panel -->
+          <div class="lg:col-span-3 space-y-6">
+            <!-- Content Details -->
+            <div class="bg-gradient-to-br from-dark-100 to-dark-200 rounded-xl p-6 shadow-modern border border-gray-800/50">
+              <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-dark-300/30 p-3 rounded-lg shadow-inner-bright">
+                  <p class="text-xs text-gray-500 uppercase mb-1">Publish Date</p>
+                  <p class="text-white" id="content-publish-date">--</p>
+                </div>
+                <div class="bg-dark-300/30 p-3 rounded-lg shadow-inner-bright">
+                  <p class="text-xs text-gray-500 uppercase mb-1">Last Modified</p>
+                  <p class="text-white" id="content-last-modified">--</p>
+                </div>
+                <div class="bg-dark-300/30 p-3 rounded-lg shadow-inner-bright">
+                  <p class="text-xs text-gray-500 border-amber-600 uppercase mb-1">Scheduled</p>
+                  <p class="text-white" id="content-scheduled">--</p>
+                </div>
+              </div>
+              
+              <div class="mb-6">
+                <p class="text-xs text-gray-500 uppercase mb-1">Description</p>
+                <p class="text-white" id="content-description">--</p>
+              </div>
+              
+              <div>
+                <p class="text-xs text-gray-500 uppercase mb-1">Content</p>
+                <div class="bg-dark-200/80 rounded-lg p-4 mt-2 max-h-96 overflow-y-auto prose prose-invert prose-sm max-w-none shadow-inner-bright" id="content-text">
+                  Loading content...
+                </div>
+              </div>
+            </div>
+
+            <!-- Media Gallery -->
+            <div class="bg-gradient-to-br from-dark-100 to-dark-200 rounded-xl overflow-hidden shadow-modern border border-gray-800/50">
+              <div class="px-5 py-4 border-b border-gray-800/80">
+                <h3 class="font-medium text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">Media Assets</h3>
+              </div>
+              <div class="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="content-media">
+                <div class="col-span-full flex justify-center items-center py-10">
+                  <span class="text-gray-500">No media found for this content</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sidebar -->
+          <div class="space-y-6">
+            <!-- Status Updates -->
+            <div class="bg-gradient-to-br from-dark-100 to-dark-200 rounded-xl overflow-hidden shadow-modern border border-gray-800/50">
+              <div class="px-5 py-4 border-b border-gray-800/80">
+                <h3 class="font-medium text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">Status</h3>
+              </div>
+              <div class="p-5">
+                <div class="mb-4">
+                  <div class="flex justify-between mb-1">
+                    <label class="text-sm text-gray-400">Text Status</label>
+                    <span id="text-status-badge" class="status-pill bg-gradient-to-r from-yellow-600/20 to-yellow-500/20 text-yellow-400">--</span>
+                  </div>
+                  <select id="text-status-select" class="w-full bg-dark-200/80 border border-gray-700/80 shadow-inner-bright rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-transparent text-white">
+                    <option value="In-Progress">In Progress</option>
+                    <option value="Needs Review">Needs Review</option>
+                    <option value="Approved">Approved</option>
+                  </select>
+                </div>
+                <div class="mb-4">
+                  <div class="flex justify-between mb-1">
+                    <label class="text-sm text-gray-400">Image Status</label>
+                    <span id="image-status-badge" class="status-pill bg-gradient-to-r from-yellow-600/20 to-yellow-500/20 text-yellow-400">--</span>
+                  </div>
+                  <select id="image-status-select" class="w-full bg-dark-200/80 border border-gray-700/80 shadow-inner-bright rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-transparent text-white">
+                    <option value="In-Progress">In Progress</option>
+                    <option value="Needs Review">Needs Review</option>
+                    <option value="Approved">Approved</option>
+                  </select>
+                </div>
+                <button id="update-status-btn" class="w-full mt-4 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white py-2 px-4 rounded-lg transition duration-300 shadow-md btn-highlight">
+                  Update Status
+                </button>
+              </div>
+            </div>
+
+            <!-- Apply Action -->
+            <div class="bg-gradient-to-br from-dark-100 to-dark-200 rounded-xl overflow-hidden shadow-modern border border-gray-800/50">
+              <div class="px-5 py-4 border-b border-gray-800/80">
+                <h3 class="font-medium text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">Apply Action</h3>
+              </div>
+              <div class="p-5">
+                <select id="content-action-select" class="w-full bg-dark-200/80 border border-gray-700/80 shadow-inner-bright rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-transparent text-white mb-4">
+                  <option value="">Select an action...</option>
+                </select>
+                <button id="content-apply-action-btn" class="w-full bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white py-2 px-4 rounded-lg transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-md btn-highlight">
+                  Apply Action
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create Content View -->
+      <div id="create-content-view" class="p-6 h-full hidden">
+        <div class="mb-6 flex items-center">
+          <button id="cancel-create-content" class="p-2 rounded-lg bg-dark-200/80 hover:bg-dark-100 text-gray-300 mr-3 shadow-md">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-200">Create New Content</h1>
+            <p class="text-gray-400">Add a new content piece to your library</p>
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-dark-100 to-dark-200 rounded-xl overflow-hidden shadow-modern border border-gray-800/50">
+          <div class="px-5 py-4 border-b border-gray-800/80">
+            <h3 class="font-medium text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">Content Details</h3>
+          </div>
+          <div class="p-6">
+            <form id="create-content-form">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                  <label for="new-content-title" class="block text-sm font-medium text-gray-300 mb-2">Title</label>
+                  <input type="text" id="new-content-title" class="w-full bg-dark-200/80 border border-gray-700/80 shadow-inner-bright rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-transparent text-white" required>
+                </div>
+                <div class="md:col-span-2">
+                  <label for="new-content-description" class="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                  <input type="text" id="new-content-description" class="w-full bg-dark-200/80 border border-gray-700/80 shadow-inner-bright rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-transparent text-white" required>
+                </div>
+                <div>
+                  <label for="new-content-publish-date" class="block text-sm font-medium text-gray-300 mb-2">Publish Date</label>
+                  <input type="date" id="new-content-publish-date" class="w-full bg-dark-200/80 border border-gray-700/80 shadow-inner-bright rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-transparent text-white" required>
+                </div>
+                <div class="flex items-center">
+                  <div class="flex items-center h-full pt-8">
+                    <label class="inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="new-content-schedule" class="sr-only peer">
+                      <div class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-600/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                      <span class="ms-3 text-sm font-medium text-gray-300">Add to schedule</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-8 flex justify-end">
+                <button type="button" id="cancel-create-btn" class="px-4 py-2 bg-gray-700/80 border border-gray-600/50 rounded-lg text-gray-300 hover:bg-gray-600 mr-3 shadow-md btn-highlight">
+                  Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 rounded-lg text-white shadow-md btn-highlight">
+                  Create Content
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-y-20 opacity-0 z-50 flex items-center">
+    <div id="toast-icon" class="w-8 h-8 rounded-full flex items-center justify-center mr-3">
+      <i id="toast-icon-i" class="fas fa-check"></i>
+    </div>
+    <div>
+      <p id="toast-message" class="font-medium">Notification message</p>
+      <p id="toast-description" class="text-xs mt-1 opacity-80">Additional details about the action</p>
+    </div>
+  </div>
+
+<script src="app.js"></script>
+ 
+</body>
+</html>
